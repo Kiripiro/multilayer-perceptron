@@ -51,7 +51,7 @@ class Sigmoid:
         Returns:
             numpy.ndarray: The output of the Sigmoid activation function.
         """
-        self.output = 1 / (1 + np.exp(-input))
+        self.output = 1 / (1 + np.exp(-np.clip(input, -500, 500)))
         return self.output
     
     def backward(self, gradient):

@@ -1,1 +1,4 @@
-/venv
+venv/
+**/__pycache__/
+/data/train_test/*
+data/model/*

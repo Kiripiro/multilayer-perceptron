@@ -85,9 +85,9 @@ def precision_recall_f1_score(y_true, y_pred, labels=None):
                 false_positives[label_to_index[pred]] += 1
                 false_negatives[label_to_index[true]] += 1
     
-    precision = true_positives / (true_positives + false_positives)
+    precision = true_positives / (true_positives + false_positives + 1e-10)
     recall = true_positives / (true_positives + false_negatives)
-    f1 = 2 * (precision * recall) / (precision + recall)
+    f1 = 2 * (precision * recall) / (precision + recall + 1e-10)
     
     precision = np.nan_to_num(precision)
     recall = np.nan_to_num(recall)
