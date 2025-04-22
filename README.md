@@ -41,17 +41,17 @@ Below is a brief description of each script:
       input_size: 30
       output_size: 24
       kernel_initializer: xavier
-   - type: Sigmoid
+   - type: ReLU
    - type: Dense
       input_size: 24
       output_size: 16
       kernel_initializer: xavier
-   - type: Sigmoid
+   - type: ReLU
    - type: Dense
       input_size: 16
-      output_size: 2
+      output_size: 1
       kernel_initializer: xavier
-   - type: Softmax
+   - type: Sigmoid
    ```
 
    This config will be loaded automatically.
