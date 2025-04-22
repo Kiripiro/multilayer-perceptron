@@ -53,46 +53,52 @@ def accuracy_score(y_true, y_pred):
 
 def precision_recall_f1_score(y_true, y_pred, labels=None):
     """
-    Computes the precision, recall, and F1 score for a classification task.
+    Computes precision, recall, F1 for binaire (seuillage) ou multiclasses (argmax).
 
-    Parameters:
-    - y_true: array-like of shape (n_samples,) - True labels of the data.
-    - y_pred: array-like of shape (n_samples,) - Predicted labels of the data.
-    - labels: array-like of shape (n_classes,), optional - List of labels as strings. If not provided,
-              labels used are the sorted list of unique labels in both y_true and y_pred.
+    Args:
+        y_true: array-like, shape (n,) or (n,1) or (n,k>1)
+        y_pred: array-like, same shape as y_true raw preds:
+                - (n,1) probas sigmoïde
+                - (n,k) probas softmax
+                - (n,) labels déjà encodés
+        labels: optional list of label values
 
     Returns:
-    - precision: ndarray of shape (n_classes,) - Precision scores for each class.
-    - recall: ndarray of shape (n_classes,) - Recall scores for each class.
-    - f1: ndarray of shape (n_classes,) - F1 scores for each class.
-    - labels: ndarray of shape (n_classes,) - Labels used to index the scores.
+        precision, recall, f1, labels_array
     """
+    yt = np.array(y_true)
+    yp = np.array(y_pred)
+
+    if yt.ndim > 1 and yt.shape[1] > 1:
+        y_true_flat = np.argmax(yt, axis=1)
+    else:
+        y_true_flat = yt.ravel()
+
+    if yp.ndim > 1 and yp.shape[1] > 1:
+        y_pred_flat = np.argmax(yp, axis=1)
+    elif yp.ndim > 1 and yp.shape[1] == 1:
+        y_pred_flat = (yp >= 0.5).astype(int).ravel()
+    else:
+        y_pred_flat = yp.ravel()
+
     if labels is None:
-        labels = np.unique(np.concatenate((y_true, y_pred)))
-    num_classes = len(labels)
-    
-    label_to_index = {label: index for index, label in enumerate(labels)}
-    
-    true_positives = np.zeros(num_classes)
-    false_positives = np.zeros(num_classes)
-    false_negatives = np.zeros(num_classes)
-    
-    for true, pred in zip(y_true, y_pred):
-        if true in label_to_index and pred in label_to_index:
-            if true == pred:
-                true_positives[label_to_index[true]] += 1
-            else:
-                false_positives[label_to_index[pred]] += 1
-                false_negatives[label_to_index[true]] += 1
-    
-    precision = true_positives / (true_positives + false_positives + 1e-10)
-    recall = true_positives / (true_positives + false_negatives)
-    f1 = 2 * (precision * recall) / (precision + recall + 1e-10)
-    
-    precision = np.nan_to_num(precision)
-    recall = np.nan_to_num(recall)
-    f1 = np.nan_to_num(f1)
-    
+        labels = np.unique(np.concatenate((y_true_flat, y_pred_flat)))
+    labels = np.array(labels)
+    n = len(labels)
+    idx = {lab:i for i,lab in enumerate(labels)}
+
+    tp = np.zeros(n); fp = np.zeros(n); fn = np.zeros(n)
+    for t, p in zip(y_true_flat, y_pred_flat):
+        if t == p:
+            tp[idx[t]] += 1
+        else:
+            fp[idx[p]] += 1
+            fn[idx[t]] += 1
+
+    precision = np.nan_to_num(tp / (tp + fp + 1e-10))
+    recall    = np.nan_to_num(tp / (tp + fn + 1e-10))
+    f1        = np.nan_to_num(2 * (precision * recall) / (precision + recall + 1e-10))
+
     return precision, recall, f1, labels
 
 def classification_report(y_true, y_pred):

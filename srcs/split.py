@@ -2,6 +2,7 @@ import pandas as pd
 from neural_network_lib.utils import clean_dataset
 from neural_network_lib.utils import train_test_split
 from colorama import Fore, Style
+import os
 
 def add_labels(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -49,7 +50,6 @@ def split_dataset(input_csv: str, test_size=0.2, random_state=32):
     print(f"  - Input csv: {input_csv}")
     print(f"  - Test size: {test_size}")
     print(f"  - Random State: {random_state}")
-    print()
 
     try:
         data = pd.read_csv(input_csv)
@@ -83,6 +83,7 @@ def split_dataset(input_csv: str, test_size=0.2, random_state=32):
         train_data = pd.concat([X_train, y_train], axis=1)
         test_data = pd.concat([X_test, y_test], axis=1)
 
+        os.makedirs('data/train_test', exist_ok=True)
         train_data.to_csv('data/train_test/train.csv', index=False)
         test_data.to_csv('data/train_test/test.csv', index=False)
         

@@ -1,4 +1,5 @@
 import numpy as np
+from neural_network_lib.metrics.metrics import precision_recall_f1_score
 
 class Sequential:
     """
@@ -17,6 +18,8 @@ class Sequential:
         backward: Performs backward pass through the model to compute gradients.
         fit: Trains the model on the given data for a specified number of epochs.
         evaluate: Evaluates the model on the given data.
+        predict: Generates class predictions or probabilities from input data.
+        get_last_layer: Returns the last layer of the model.
     """
     
     def __init__(self):
@@ -88,15 +91,23 @@ class Sequential:
         """
         history = {'loss': [], 'accuracy': []}
         for epoch in range(epochs):
-            predictions = self.forward(X)
-            loss_value = self.loss.forward(predictions, y)
+            preds = self.forward(X)
+            loss_value = self.loss.forward(preds, y)
             history['loss'].append(loss_value)
-            accuracy = np.mean(np.argmax(predictions, axis=1) == np.argmax(y, axis=1))
+
+            if preds.ndim > 1 and preds.shape[1] > 1:
+                y_true_flat = np.argmax(y, axis=1)
+                y_pred_flat = np.argmax(preds, axis=1)
+            else:
+                y_true_flat = np.array(y).ravel()
+                y_pred_flat = (preds >= 0.5).astype(int).ravel()
+
+            accuracy = np.mean(y_pred_flat == y_true_flat)
             history['accuracy'].append(accuracy)
-            gradient = self.loss.backward(predictions, y)
-            self.backward(gradient)
-            params = []
-            grads = []
+
+            grad = self.loss.backward(preds, y)
+            self.backward(grad)
+            params, grads = [], []
             for layer in self.layers:
                 if hasattr(layer, 'weights') and hasattr(layer, 'biases'):
                     params.extend([layer.weights, layer.biases])
@@ -115,7 +126,31 @@ class Sequential:
         Returns:
             tuple: A tuple containing the loss value and accuracy.
         """
-        predictions = self.forward(X)
-        loss_value = self.loss.forward(predictions, y)
-        accuracy = np.mean(np.argmax(predictions, axis=1) == np.argmax(y, axis=1))
-        return loss_value, accuracy
+        preds = self.forward(X)
+        loss  = self.loss.forward(preds, y)
+
+        precision, recall, f1, labels = precision_recall_f1_score(y, preds)
+
+        if preds.ndim > 1 and preds.shape[1] > 1:
+            y_true_flat = np.argmax(y, axis=1)
+            y_pred_flat = np.argmax(preds, axis=1)
+        else:
+            y_true_flat = np.array(y).ravel()
+            y_pred_flat = (preds >= 0.5).astype(int).ravel()
+        accuracy = np.mean(y_pred_flat == y_true_flat)
+
+        print(f'Loss: {loss:.4f}  Acc: {accuracy:.4f}')
+        for lab, p, r, f in zip(labels, precision, recall, f1):
+            print(f'Class {lab}: P={p:.2f} R={r:.2f} F1={f:.2f}')
+        return loss, accuracy
+
+    def predict(self, X, return_probs=False):
+        proba = self.forward(X)
+        if return_probs:
+            return proba
+        if proba.ndim > 1 and proba.shape[1] > 1:
+            return np.argmax(proba, axis=1)
+        return (proba >= 0.5).astype(int).ravel()
+
+    def get_last_layer(self):
+        return self.layers[-1] if self.layers else None

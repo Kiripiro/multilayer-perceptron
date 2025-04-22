@@ -54,8 +54,8 @@ def run_training(epochs, optimizer, learning_rate, early_stopping, patience, bat
     X_train, y_train = label_encoder(train_file_path, target_column='diagnosis', positive_class='M', negative_class='B')
     X_val, y_val = label_encoder(test_file_path, target_column='diagnosis', positive_class='M', negative_class='B')
 
-    X_train, y_train = preprocess_data(X_train, y_train, encode_labels=True)
-    X_val, y_val = preprocess_data(X_val, y_val, encode_labels=True)
+    X_train, y_train = preprocess_data(X_train, y_train)
+    X_val, y_val = preprocess_data(X_val, y_val)
 
     model, history = train(
         X_train, y_train, X_val, y_val, epochs, optimizer, learning_rate,
