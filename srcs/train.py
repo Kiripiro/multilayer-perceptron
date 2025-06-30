@@ -7,6 +7,33 @@ from neural_network_lib.utils import save_model
 from neural_network_lib.visualizer.visualizer import plot_learning_curves
 from colorama import Fore, Style
 
+def validate_parameters(epochs, optimizer, learning_rate, early_stopping, patience):
+    """
+    Validates the parameters for training a neural network model.
+
+    Args:
+        epochs (int): The number of epochs for training.
+        optimizer (str): The optimizer to use during training ('sgd', 'sgdMomentum', or 'adam').
+        learning_rate (float): The learning rate for the optimizer.
+        early_stopping (bool): Whether to use early stopping during training.
+        patience (int): The number of epochs to wait before early stopping if no improvement.
+
+    Raises:
+        ValueError: If any of the parameters are invalid.
+
+    Returns:
+        None
+    """
+    if epochs <= 0 or not isinstance(epochs, int):
+        raise ValueError("Number of epochs must be a positive integer.")
+    if learning_rate <= 0 or not isinstance(learning_rate, (int, float)):
+        raise ValueError("Learning rate must be a positive number.")
+    if optimizer not in ['sgd', 'sgdMomentum', 'adam']:
+        raise ValueError("Optimizer must be one of 'sgd', 'sgdMomentum', or 'adam'.")
+    if early_stopping and (patience <= 0 or not isinstance(patience, int)):
+        raise ValueError("Patience must be a positive integer when early stopping is enabled.")
+
+
 def run_training(epochs, optimizer, learning_rate, early_stopping, patience, batch_size=32):
     """
     Runs the training process of a neural network model using the specified parameters.
@@ -28,6 +55,8 @@ def run_training(epochs, optimizer, learning_rate, early_stopping, patience, bat
     Returns:
         None
     """
+    validate_parameters(epochs, optimizer, learning_rate, early_stopping, patience)
+
     train_file_path = 'data/train_test/train.csv'
     test_file_path = 'data/train_test/test.csv'
 
@@ -49,7 +78,6 @@ def run_training(epochs, optimizer, learning_rate, early_stopping, patience, bat
         raise ValueError(f'Training file {train_file_path} does not contain the required columns: {required_columns}')
     if not all(col in test_data.columns for col in required_columns):
         raise ValueError(f'Test file {test_file_path} does not contain the required columns: {required_columns}')
-
 
     X_train, y_train = label_encoder(train_file_path, target_column='diagnosis', positive_class='M', negative_class='B')
     X_val, y_val = label_encoder(test_file_path, target_column='diagnosis', positive_class='M', negative_class='B')

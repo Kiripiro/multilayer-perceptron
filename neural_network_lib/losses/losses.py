@@ -76,7 +76,6 @@ class CategoricalCrossentropy:
         clipped_predictions = np.clip(predictions, 1e-7, 1 - 1e-7)
         gradient = -targets / clipped_predictions
         return gradient / samples
-
 class BinaryCrossEntropy:
     """
     Binary Crossentropy loss function for binary classification.
@@ -86,32 +85,46 @@ class BinaryCrossEntropy:
         backward(predictions, targets): Computes the gradient of the binary crossentropy loss.
     """
     
-    def forward(self, predictions, targets):
+    def forward(self, predictions: np.ndarray, targets: np.ndarray) -> float:
         """
         Computes the binary crossentropy loss.
-        
+        Automatically reshapes targets or predictions if needed.
+
         Args:
-            predictions (numpy.ndarray): The predicted probabilities.
-            targets (numpy.ndarray): The true binary labels (0 or 1).
-        
+            predictions (numpy.ndarray): The predicted probabilities, shape (N,) or (N,1).
+            targets (numpy.ndarray): The true binary labels (0 or 1), shape (N,) or (N,1).
         Returns:
-            float: The computed binary crossentropy loss.
+            float: The computed binary crossentropy loss (mean).
         """
-        predictions = np.clip(predictions, 1e-7, 1 - 1e-7)
-        loss = -(targets * np.log(predictions) + (1 - targets) * np.log(1 - predictions))
+        preds = predictions.squeeze()
+        targs = targets.squeeze()
+
+        if preds.shape != targs.shape:
+            raise ValueError(f"After squeezing: shapes do not match: {preds.shape} vs {targs.shape}")
+
+        preds = np.clip(preds, 1e-7, 1 - 1e-7)
+
+        loss = -(targs * np.log(preds) + (1 - targs) * np.log(1 - preds))
         return np.mean(loss)
     
-    def backward(self, predictions, targets):
+    def backward(self, predictions: np.ndarray, targets: np.ndarray) -> np.ndarray:
         """
         Computes the gradient of the binary crossentropy loss.
-        
+        Automatically reshapes targets or predictions if needed.
+
         Args:
-            predictions (numpy.ndarray): The predicted probabilities.
-            targets (numpy.ndarray): The true binary labels (0 or 1).
-        
+            predictions (numpy.ndarray): The predicted probabilities, shape (N,) or (N,1).
+            targets (numpy.ndarray): The true binary labels (0 or 1), shape (N,) or (N,1).
         Returns:
-            numpy.ndarray: The gradient of the loss with respect to the predictions.
+            numpy.ndarray: The gradient of the loss w.r.t. predictions, same shape as inputs.
         """
-        predictions = np.clip(predictions, 1e-7, 1 - 1e-7)
-        gradient = -(targets / predictions - (1 - targets) / (1 - predictions))
-        return gradient / targets.size
+        preds = predictions.squeeze()
+        targs = targets.squeeze()
+
+        if preds.shape != targs.shape:
+            raise ValueError(f"After squeezing: shapes do not match: {preds.shape} vs {targs.shape}")
+
+        preds = np.clip(preds, 1e-7, 1 - 1e-7)
+        grad = -(targs / preds - (1 - targs) / (1 - preds)) / targs.size
+
+        return grad.reshape(predictions.shape)

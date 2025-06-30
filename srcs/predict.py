@@ -50,7 +50,6 @@ def evaluate_model(test_csv, activations):
     None
     """
     try:
-        # 1) Chargement et pré‑traitement
         X_test, y_test = label_encoder(
             test_csv,
             target_column='diagnosis',
@@ -58,27 +57,21 @@ def evaluate_model(test_csv, activations):
             negative_class='B'
         )
         X_test = preprocess_data(X_test)
-        y_test = np.array(y_test).ravel()  # → vecteur 1‑D de 0/1
+        y_test = np.array(y_test).ravel()
 
-        # 2) Chargement du modèle
         model = load_model()
         last_layer = model.get_last_layer()
         print(f"Last layer type: {last_layer.__class__.__name__}" if last_layer else "No layers in the model")
 
-        # 3) Prédictions
         predictions_proba = predict(model, X_test, return_probs=True)
-        # on aplatit toujours les labels prédits pour classification_report
         predictions_labels = np.array(predict(model, X_test, return_probs=False)).ravel()
 
-        # 4) Détection du cas binaire vs multiclasses
         binary = is_binary_case(predictions_proba)
 
-        # 5) Calcul de la loss (moyenne)
         if binary:
             loss = BinaryCrossEntropy().forward(predictions_proba, y_test).mean()
             print(f"Binary Cross-Entropy Loss (moyenne) : {loss:.4f}")
         else:
-            # on reconstruit y_test en one-hot si nécessaire
             n_samples = y_test.size
             n_classes = predictions_proba.shape[1]
             y_test_oh = np.zeros((n_samples, n_classes))
@@ -86,10 +79,8 @@ def evaluate_model(test_csv, activations):
             loss = CategoricalCrossentropy().forward(predictions_proba, y_test_oh).mean()
             print(f"Categorical Cross-Entropy Loss (moyenne) : {loss:.4f}")
 
-        # 6) Rapport de classification
         print(classification_report(y_test, predictions_labels))
 
-        # 7) Matrice de confusion
         plot_confusion_matrix(
             y_test,
             predictions_labels,
@@ -97,7 +88,6 @@ def evaluate_model(test_csv, activations):
             labels_values=[0, 1]
         )
 
-        # 8) Visualisation des activations (optionnel)
         if activations:
             idx = np.random.choice(X_test.shape[0], size=10, replace=False)
             plot_activations(model, X_test[idx])
