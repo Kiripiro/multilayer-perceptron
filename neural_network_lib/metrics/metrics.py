@@ -53,14 +53,14 @@ def accuracy_score(y_true, y_pred):
 
 def precision_recall_f1_score(y_true, y_pred, labels=None):
     """
-    Computes precision, recall, F1 for binaire (seuillage) ou multiclasses (argmax).
+    Computes precision, recall, F1 for binary (thresholding) or multiclass (argmax).
 
     Args:
         y_true: array-like, shape (n,) or (n,1) or (n,k>1)
         y_pred: array-like, same shape as y_true raw preds:
-                - (n,1) probas sigmoïde
-                - (n,k) probas softmax
-                - (n,) labels déjà encodés
+                - (n,1) sigmoid probabilities
+                - (n,k) softmax probabilities
+                - (n,) already encoded labels
         labels: optional list of label values
 
     Returns:

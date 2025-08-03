@@ -3,8 +3,11 @@ from neural_network_lib.metrics.metrics import precision_recall_f1_score
 
 class Sequential:
     """
-    Class representing a sequential neural network model.
-
+    A class representing a sequential neural network model.
+    
+    This class implements a feedforward neural network where layers are stacked
+    sequentially. It provides methods for training, evaluation, and prediction.
+    
     Attributes:
         layers (list): List of layers in the model.
         loss (object): Loss function used for optimization.
@@ -52,7 +55,7 @@ class Sequential:
     
     def forward(self, input):
         """
-        Performs forward pass through the model.
+        Performs a forward pass through the model.
 
         Args:
             input (numpy.ndarray): The input data.
@@ -66,7 +69,7 @@ class Sequential:
     
     def backward(self, gradient):
         """
-        Performs backward pass through the model to compute gradients.
+        Performs a backward pass through the model to compute gradients.
 
         Args:
             gradient (numpy.ndarray): The gradient of the loss with respect to the output.
@@ -82,12 +85,12 @@ class Sequential:
         Trains the model on the given data for a specified number of epochs.
 
         Args:
-            X (numpy.ndarray): The input data for training.
+            X (numpy.ndarray): The input training data.
             y (numpy.ndarray): The target values for training.
-            epochs (int): The number of epochs to train the model.
+            epochs (int): The number of training epochs.
 
         Returns:
-            dict: A dictionary containing the history of loss and accuracy for each epoch.
+            dict: A dictionary containing the training history with loss and accuracy for each epoch.
         """
         history = {'loss': [], 'accuracy': []}
         for epoch in range(epochs):
@@ -117,7 +120,7 @@ class Sequential:
     
     def evaluate(self, X, y):
         """
-        Evaluates the model on the given data.
+        Evaluates the model performance on the given data.
 
         Args:
             X (numpy.ndarray): The input data for evaluation.
@@ -129,15 +132,18 @@ class Sequential:
         preds = self.forward(X)
         loss  = self.loss.forward(preds, y)
 
-        precision, recall, f1, labels = precision_recall_f1_score(y, preds)
-
-        if preds.ndim > 1 and preds.shape[1] > 1:
+        if preds.ndim > 1 and preds.shape[1] == 2:
+            y_pred_flat = np.argmax(preds, axis=1)
+        elif preds.ndim > 1 and preds.shape[1] > 2:
             y_true_flat = np.argmax(y, axis=1)
             y_pred_flat = np.argmax(preds, axis=1)
         else:
-            y_true_flat = np.array(y).ravel()
             y_pred_flat = (preds >= 0.5).astype(int).ravel()
+        
+        y_true_flat = np.array(y).ravel()
         accuracy = np.mean(y_pred_flat == y_true_flat)
+
+        precision, recall, f1, labels = precision_recall_f1_score(y_true_flat, y_pred_flat)
 
         print(f'Loss: {loss:.4f}  Acc: {accuracy:.4f}')
         for lab, p, r, f in zip(labels, precision, recall, f1):
@@ -145,12 +151,35 @@ class Sequential:
         return loss, accuracy
 
     def predict(self, X, return_probs=False):
+        """
+        Generates class predictions or probabilities from input data.
+        
+        Args:
+            X (numpy.ndarray): The input data for prediction.
+            return_probs (bool): If True, returns probabilities. If False, returns class predictions.
+        
+        Returns:
+            numpy.ndarray: Class predictions or probabilities depending on return_probs parameter.
+        """
         proba = self.forward(X)
+        
         if return_probs:
+            if proba.ndim > 1 and proba.shape[1] == 2:
+                return proba[:, 1]
             return proba
-        if proba.ndim > 1 and proba.shape[1] > 1:
+        
+        if proba.ndim > 1 and proba.shape[1] == 2:
             return np.argmax(proba, axis=1)
-        return (proba >= 0.5).astype(int).ravel()
+        elif proba.ndim > 1 and proba.shape[1] > 2:
+            return np.argmax(proba, axis=1)
+        else:
+            return (proba >= 0.5).astype(int).ravel()
 
     def get_last_layer(self):
+        """
+        Returns the last layer of the model.
+        
+        Returns:
+            object or None: The last layer in the model, or None if no layers exist.
+        """
         return self.layers[-1] if self.layers else None

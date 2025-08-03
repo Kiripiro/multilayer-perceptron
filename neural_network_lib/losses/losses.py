@@ -55,9 +55,9 @@ class CategoricalCrossentropy:
         Returns:
             float: The computed categorical crossentropy loss.
         """
-        samples = len(predictions)
-        clipped_predictions = np.clip(predictions, 1e-7, 1 - 1e-7)
+        clipped_predictions = np.clip(predictions, 1e-15, 1 - 1e-15)
         correct_confidences = np.sum(targets * clipped_predictions, axis=1)
+        correct_confidences = np.clip(correct_confidences, 1e-15, 1.0)
         negative_log_likelihoods = -np.log(correct_confidences)
         return np.mean(negative_log_likelihoods)
     
@@ -79,6 +79,7 @@ class CategoricalCrossentropy:
 class BinaryCrossEntropy:
     """
     Binary Crossentropy loss function for binary classification.
+    Automatically extracts malignant class probability from Softmax output.
 
     Methods:
         forward(predictions, targets): Computes the binary crossentropy loss.
@@ -88,20 +89,21 @@ class BinaryCrossEntropy:
     def forward(self, predictions: np.ndarray, targets: np.ndarray) -> float:
         """
         Computes the binary crossentropy loss.
-        Automatically reshapes targets or predictions if needed.
+        If predictions has 2 columns (Softmax output), extracts malignant class probability (index 1).
 
         Args:
-            predictions (numpy.ndarray): The predicted probabilities, shape (N,) or (N,1).
-            targets (numpy.ndarray): The true binary labels (0 or 1), shape (N,) or (N,1).
+            predictions (numpy.ndarray): The predicted probabilities, shape (N,) or (N,2) for Softmax.
+            targets (numpy.ndarray): The true binary labels (0 or 1), shape (N,).
         Returns:
             float: The computed binary crossentropy loss (mean).
         """
-        preds = predictions.squeeze()
+        if predictions.ndim > 1 and predictions.shape[1] == 2:
+            preds = predictions[:, 1]
+        else:
+            preds = predictions.squeeze()
+        
         targs = targets.squeeze()
-
-        if preds.shape != targs.shape:
-            raise ValueError(f"After squeezing: shapes do not match: {preds.shape} vs {targs.shape}")
-
+        
         preds = np.clip(preds, 1e-7, 1 - 1e-7)
 
         loss = -(targs * np.log(preds) + (1 - targs) * np.log(1 - preds))
@@ -110,21 +112,24 @@ class BinaryCrossEntropy:
     def backward(self, predictions: np.ndarray, targets: np.ndarray) -> np.ndarray:
         """
         Computes the gradient of the binary crossentropy loss.
-        Automatically reshapes targets or predictions if needed.
+        If predictions has 2 columns (Softmax output), computes gradient for both classes.
 
         Args:
-            predictions (numpy.ndarray): The predicted probabilities, shape (N,) or (N,1).
-            targets (numpy.ndarray): The true binary labels (0 or 1), shape (N,) or (N,1).
+            predictions (numpy.ndarray): The predicted probabilities, shape (N,) or (N,2) for Softmax.
+            targets (numpy.ndarray): The true binary labels (0 or 1), shape (N,).
         Returns:
-            numpy.ndarray: The gradient of the loss w.r.t. predictions, same shape as inputs.
+            numpy.ndarray: The gradient of the loss w.r.t. predictions, same shape as input.
         """
-        preds = predictions.squeeze()
         targs = targets.squeeze()
-
-        if preds.shape != targs.shape:
-            raise ValueError(f"After squeezing: shapes do not match: {preds.shape} vs {targs.shape}")
-
-        preds = np.clip(preds, 1e-7, 1 - 1e-7)
-        grad = -(targs / preds - (1 - targs) / (1 - preds)) / targs.size
-
-        return grad.reshape(predictions.shape)
+        
+        if predictions.ndim > 1 and predictions.shape[1] == 2:
+            grad = np.zeros_like(predictions)
+            
+            grad[:, 0] = predictions[:, 0] - (1 - targs)
+            grad[:, 1] = predictions[:, 1] - targs
+            
+            return grad / targs.size
+        else:
+            preds = np.clip(predictions.squeeze(), 1e-7, 1 - 1e-7)
+            grad = -(targs / preds - (1 - targs) / (1 - preds)) / targs.size
+            return grad.reshape(predictions.shape)

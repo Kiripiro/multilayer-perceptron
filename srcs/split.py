@@ -73,7 +73,9 @@ def split_dataset(input_csv: str, test_size=0.2, random_state=32):
         X = data.drop(columns=['diagnosis'])
         y = data['diagnosis']
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=y
+        )
 
         X_train.reset_index(drop=True, inplace=True)
         X_test.reset_index(drop=True, inplace=True)

@@ -1,18 +1,24 @@
+loss_function: binary
 layers:
   - type: InputLayer
     input_size: 30
   - type: Dense
     input_size: 30
     output_size: 24
-    kernel_initializer: xavier
-  - type: ReLU
+    kernel_initializer: he
+  - type: Sigmoid
   - type: Dense
     input_size: 24
-    output_size: 16
-    kernel_initializer: xavier
-  - type: ReLU
-  - type: Dense
-    input_size: 16
-    output_size: 1
-    kernel_initializer: xavier
+    output_size: 24
+    kernel_initializer: he
   - type: Sigmoid
+  - type: Dense
+    input_size: 24
+    output_size: 24
+    kernel_initializer: he
+  - type: Sigmoid
+  - type: Dense
+    input_size: 24
+    output_size: 2
+    kernel_initializer: he
+  - type: Softmax

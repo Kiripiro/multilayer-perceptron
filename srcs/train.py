@@ -4,6 +4,7 @@ from neural_network_lib.models import train
 from neural_network_lib.utils import label_encoder
 from neural_network_lib.utils import preprocess_data
 from neural_network_lib.utils import save_model
+from neural_network_lib.utils.model.loss_manager import override_loss_config
 from neural_network_lib.visualizer.visualizer import plot_learning_curves
 from colorama import Fore, Style
 
@@ -34,7 +35,7 @@ def validate_parameters(epochs, optimizer, learning_rate, early_stopping, patien
         raise ValueError("Patience must be a positive integer when early stopping is enabled.")
 
 
-def run_training(epochs, optimizer, learning_rate, early_stopping, patience, batch_size=32):
+def run_training(epochs, optimizer, learning_rate, early_stopping, patience, batch_size=32, loss_function=None, show_plots=True):
     """
     Runs the training process of a neural network model using the specified parameters.
 
@@ -44,6 +45,10 @@ def run_training(epochs, optimizer, learning_rate, early_stopping, patience, bat
         learning_rate (float): The learning rate for the optimizer.
         early_stopping (bool): Whether to use early stopping during training.
         patience (int): The number of epochs to wait before early stopping if no improvement.
+        batch_size (int): Size of each mini-batch for training.
+        loss_function (str, optional): Loss function to use ('binary' or 'categorical'). 
+                                     If None, uses config file setting.
+        show_plots (bool): Whether to display training plots. Default is True.
 
     Raises:
         FileNotFoundError: If the specified training or test file paths are not found.
@@ -56,6 +61,9 @@ def run_training(epochs, optimizer, learning_rate, early_stopping, patience, bat
         None
     """
     validate_parameters(epochs, optimizer, learning_rate, early_stopping, patience)
+    
+    if loss_function:
+        override_loss_config(loss_function)
 
     train_file_path = 'data/train_test/train.csv'
     test_file_path = 'data/train_test/test.csv'
@@ -82,8 +90,8 @@ def run_training(epochs, optimizer, learning_rate, early_stopping, patience, bat
     X_train, y_train = label_encoder(train_file_path, target_column='diagnosis', positive_class='M', negative_class='B')
     X_val, y_val = label_encoder(test_file_path, target_column='diagnosis', positive_class='M', negative_class='B')
 
-    X_train, y_train = preprocess_data(X_train, y_train)
-    X_val, y_val = preprocess_data(X_val, y_val)
+    X_train, y_train, mean, std = preprocess_data(X_train, y_train, return_stats=True)
+    X_val, y_val = preprocess_data(X_val, y_val, mean=mean, std=std)
 
     model, history = train(
         X_train, y_train, X_val, y_val, epochs, optimizer, learning_rate,
@@ -92,4 +100,6 @@ def run_training(epochs, optimizer, learning_rate, early_stopping, patience, bat
 
     save_model(model)
     print(f"{Fore.CYAN}Model has been saved to data/model directory.{Style.RESET_ALL}\n")
-    plot_learning_curves(history)
+    
+    if show_plots:
+        plot_learning_curves(history)
