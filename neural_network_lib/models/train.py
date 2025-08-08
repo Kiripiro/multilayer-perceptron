@@ -8,6 +8,7 @@ from colorama import Fore, Style
 import numpy as np
 from tqdm import tqdm
 from typing import Union
+import os
 
 def train(
     X_train, y_train,
@@ -18,6 +19,7 @@ def train(
     batch_size: int = 32,
     early_stopping: Union[bool, None] = False,
     patience: int = 3,
+    scaler_stats=None,
 ):
     """
     Train an MLP on (X_train, y_train) and evaluate on (X_val, y_val).
@@ -30,6 +32,7 @@ def train(
     batch_size : int
     early_stopping : bool
     patience : int
+    scaler_stats : tuple(mean, std) or None
 
     Returns
     -------
@@ -141,6 +144,10 @@ def train(
         print(f"{Fore.GREEN}Best model (val_loss={best_val_loss:.4f}) restored.{Style.RESET_ALL}")
 
     save_model(model)
+    if scaler_stats is not None:
+        mean, std = scaler_stats
+        os.makedirs('data/model', exist_ok=True)
+        np.savez('data/model/scaler.npz', mean=mean, std=std)
     print(f"{Fore.CYAN}Model saved to 'data/model'.{Style.RESET_ALL}")
 
     return model, history

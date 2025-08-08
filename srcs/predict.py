@@ -6,6 +6,8 @@ from neural_network_lib.utils.model.loss_manager import LossManager
 from neural_network_lib.metrics import classification_report
 from neural_network_lib.visualizer.visualizer import plot_confusion_matrix, plot_activations
 from neural_network_lib.losses import CategoricalCrossentropy, BinaryCrossEntropy
+import os
+
 
 def is_binary_case(predictions):
     """
@@ -39,6 +41,21 @@ def is_binary_case(predictions):
         return False
     raise ValueError(f"Unexpected prediction shape {p.shape}")
 
+
+def _load_scaler(path: str = 'data/model/scaler.npz'):
+    """Load mean/std saved at training time. Returns (mean, std) or (None, None)."""
+    try:
+        if os.path.exists(path):
+            data = np.load(path)
+            mean = data.get('mean')
+            std = data.get('std')
+            if mean is not None and std is not None:
+                return mean, std
+    except Exception:
+        pass
+    return None, None
+
+
 def evaluate_model(test_csv, activations, show_plots=True):
     """
     Evaluate the trained model on the test dataset and print performance metrics.
@@ -61,7 +78,11 @@ def evaluate_model(test_csv, activations, show_plots=True):
             positive_class='M',
             negative_class='B'
         )
-        X_test = preprocess_data(X_test)
+        mean, std = _load_scaler()
+        if mean is not None and std is not None:
+            X_test = preprocess_data(X_test, mean=mean, std=std)
+        else:
+            X_test = preprocess_data(X_test)
         y_test = np.array(y_test).ravel()
 
         model = load_model()
